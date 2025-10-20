@@ -10,6 +10,7 @@ class NetworkVectorTileProvider extends VectorTileProvider {
   final TileProviderType type;
   final _UrlProvider _urlProvider;
   final Map<String, String>? httpHeaders;
+  final String? serverBaseUrl;
 
   @override
   final int maximumZoom;
@@ -30,6 +31,7 @@ class NetworkVectorTileProvider extends VectorTileProvider {
       {required String urlTemplate,
       this.type = TileProviderType.vector,
       this.httpHeaders,
+      this.serverBaseUrl,
       this.tileOffset = TileOffset.DEFAULT,
       this.maximumZoom = 16,
       this.minimumZoom = 1})
@@ -41,7 +43,11 @@ class NetworkVectorTileProvider extends VectorTileProvider {
     final uri = Uri.parse(_urlProvider.url(tile));
     final client = RetryClient(Client());
     try {
-      final response = await client.get(uri, headers: httpHeaders);
+      if (serverBaseUrl == null) {
+        return Uint8List(0);
+      }
+      final response = await client.post(Uri.parse(serverBaseUrl ?? ''),
+      body: {'dataUrl': uri.toString()}, headers: httpHeaders);
       if (response.statusCode == 200) {
         return response.bodyBytes;
       }
